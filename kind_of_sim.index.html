@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a1410">
+<title>KIND OF SIM</title>
+<style>
+  :root{--screen:#0a1410;--teal:#4fe3b4;--amber:#eecf6d;--orange:#ff7a1f;
+    --mono:"SF Mono","IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{background:var(--screen);font-family:var(--mono);
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  #glass{position:fixed;inset:0;touch-action:none}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .hud{position:absolute;inset:0;pointer-events:none;color:#9ad9c2;font-size:10px;letter-spacing:.14em;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .hud .tl{position:absolute;top:calc(12px + env(safe-area-inset-top));left:14px;opacity:.75}
+  .chips{position:absolute;top:calc(9px + env(safe-area-inset-top));right:12px;display:flex;gap:7px;pointer-events:auto}
+  .chip{font-family:var(--mono);font-size:10px;letter-spacing:.14em;padding:8px 11px;border-radius:5px;
+    border:1px solid #2c5647;background:#0e1d17cc;color:#7fc9ad}
+  .chip.on{background:var(--teal);border-color:var(--teal);color:#06231a;font-weight:700}
+
+  /* barra de control inferior */
+  .bar{position:absolute;left:0;right:0;bottom:0;pointer-events:auto;
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+    display:flex;gap:8px;overflow-x:auto;background:linear-gradient(#0000,#0a1410cc 40%)}
+  .bar::-webkit-scrollbar{display:none}
+  .grp{flex:0 0 auto;background:#1c2a24cc;border-radius:9px;padding:6px 8px 7px;min-width:96px}
+  .grp .lab{color:#6f9585;font-size:7px;letter-spacing:.2em;margin-bottom:5px;text-align:center}
+  .grp .row{display:flex;gap:4px}
+  .sg{flex:1;text-align:center;font-size:9px;padding:6px 3px;border-radius:5px;border:1px solid #2f4a3f;
+    background:#0e1d17;color:#b9c2bb}
+  .sg.on{background:var(--orange);border-color:var(--orange);color:#1c1005;font-weight:700}
+  .cyc{display:flex;align-items:center;gap:4px}
+  .cyc button{width:24px;height:28px;border-radius:5px;border:1px solid #2f4a3f;background:#0e1d17;color:#c9d0c9;font-size:14px}
+  .cyc .val{flex:1;text-align:center;color:var(--teal);font-size:10px;font-weight:700;letter-spacing:.08em}
+
+.sld{display:flex;align-items:center;gap:6px;min-width:110px}
+  .sld input{flex:1;accent-color:var(--orange);height:4px}
+  .sld .v{color:var(--teal);font-size:9px;width:24px;text-align:right}
+  #boot{position:fixed;inset:0;background:#060d0a;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:16px;z-index:9;color:#9ad9c2;text-align:center;padding:24px;
+    touch-action:manipulation;cursor:pointer}
+  #boot .logo{width:60px;height:60px;border-radius:14px;background:#2e6b50;display:flex;
+    align-items:center;justify-content:center;color:#ff7a1f;font-weight:700;font-size:24px}
+  #boot .t{font-size:11px;letter-spacing:.28em}
+  #boot .s{font-size:10px;letter-spacing:.14em;opacity:.55;line-height:1.7}
+  #boot button{font-family:var(--mono);font-size:12px;letter-spacing:.25em;padding:16px 34px;
+    border-radius:8px;border:0;background:var(--teal);color:#06231a;font-weight:700;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+<audio id="beep" preload="auto" playsinline src="data:audio/wav;base64,UklGRvQHAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YdAHAAB/f3+AgIB/fXt6ent+goWHhoR/enZzc3d9hIqNjYiBeHFtbXJ7hY6Uk46EeG1mZm14hpKampOHd2lhX2Z0hZWfoZqLeGdbWGBwhJelqKCQemVWUllrgpmpr6eVfGNRS1Jlf5qutq+bf2NNREpffJqyvLaig2NKPkNYd5m1wr6piGVHODtQcpe3yMaxjmdFMjNIbJW5zc65lGpELSxAZZG50tXBnG5EKSQ3Xo251t3Ko3JEJR0uVoi42uTTrHhFIRYlTYK33evctX9IIBEeRXuy2+zhu4VOJBEbP3Ss1+zjwYxUKBIYOm2l0+vmxpNbLBMWNGefz+noy5phMRQUMGCYyujq0KBoNhYSK1mRxeXr1KdvOxkRJ1OLv+Ps2K12QRwRI02EueDs3LN9Rx8RH0d9s9zs4LmETSMRHEF2rdjs47+LUycRGTtvp9Tr5cWRWSsSFjZooNDq6MqYYDAUFDFhmsvo6c+fZzQWEyxbk8bm69OlbToYEihUjMHj7NesdD8bESROhbvh7Nuye0UeESBIfrXd7N+4gksiERxCeK/Z7OK+iVEmERo8canV6+XDkFgqEhc3aqLR6ufJll4uFBUyY5zM6enNnWUzFRMtXZXH5+vSpGw4GBIpVo7C5OzWqnI+GhElUIe84ezasHlEHREhSoC23u3etoBKIREdRHmw2uzhvIdQJREaPnKq1uzkwo5WKRIYOGyk0uvnx5VdLRMVM2WdzenpzJxjMhUULl6Wyefq0aJqNxcSKliQw+Xr1alxPBoRJlGJvuLs2a94QhwRIkuCuN/s3bV/SCARHkV7stvs4buFTiQRGz90rNfs48GMVCgSGDptpdPr5saTWywTFjRnn8/p6MuaYTEUFDBgmMro6tCgaDYWEitZkcXl69SnbzsZESdTi7/j7NitdkEcESNNhLng7NyzfUcfER9HfbPc7OC5hE0jERxBdq3Y7OO/i1MnERk7b6fU6+XFkVkrEhY2aKDQ6ujKmGAwFBQxYZrL6OnPn2c0FhMsW5PG5uvTpW06GBIoVIzB4+zXrHQ/GxEkToW74ezbsntFHhEgSH613ezfuIJLIhEcQniv2ezivolRJhEaPHGp1evlw5BYKhIXN2qi0ernyZZeLhQVMmOczOnpzZ1lMxUTLV2Vx+fr0qRsOBgSKVaOwuTs1qpyPhoRJVCHvOHs2rB5RB0RIUqAtt7t3raASiERHUR5sNrs4byHUCURGj5yqtbs5MKOVikSGDhspNLr58eVXS0TFTNlnc3p6cycYzIVFC5elsnn6tGiajcXEipYkMPl69WpcTwaESZRib7i7NmveEIcESJLgrjf7N21f0ggER5Fe7Lb7OG7hU4kERs/dKzX7OPBjFQoEhg6baXT6+bGk1ssExY0Z5/P6ejLmmExFBQwYJjK6OrQoGg2FhIrWZHF5evUp287GREnU4u/4+zYrXZBHBEjTYS54Ozcs31HHxEfR32z3OzguYRNIxEcQXat2Ozjv4tTJxEZO2+n1OvlxZFZKxIWNmig0OroyphgMBQUMWGay+jpz59nNBYTLFuTxubr06VtOhgSKFSMwePs16x0PxsRJE6Fu+Hs27J7RR4RIEh+td3s37iCSyIRHEJ4r9ns4r6JUSYRGjxxqdXr5cOQWCoSFzdqotHq58mWXi4UFTJjnMzp6c2dZTMVEy1dlcfn69KkbDgYEilWjsLk7Naqcj4aESVQh7zh7NqweUQdESFKgLbe7d62gEohER1EebDa7OG8h1AlERo+cqrW7OTCjlYpEhg4bKTS6+fHlV0tExUzZZ3N6enMnGMyFRQuXpbJ5+rRomo3FxIqWJDD5evVqXE8GhEmUYm+4uzZr3hCHBEiS4K43+zdtX9IIBEeRXuy2+zhu4VOJBEbP3Ss1+zjwYxUKBIYOm2l0+vmxpNbLBMWNGefz+noy5phMRQUMGCYyujq0KBoNhYSK1mRxeXr1KdvOxkRJ1OLv+Ps2K12QRwRI02EueDs3LN9Rx8RH0d9s9zs4LmETSMRHEF2rdjs47+LUycRGTtvp9Tr5cWRWSsSFjZooNDq6MqYYDAUFDFhmsvo6c+fZzQWEyxbk8bm69OlbToYEihUjMHj7NesdD8bESROhbvh7Nuye0UeESBIfrXd7N63gkwjEx9EeK3W6N67iFMqFx9AcqbQ5N6+jlsxGyA9bJ/J4N3BlGI3ICE7ZpjD29vDmWg+JCM5YpG81tnFnm9EKSU4XYu10dfGonVLLyc3WYWvzNTGpXpRNCo3VoCpxtHGqIBXOS43U3ujwc7Fq4VdPzE4UXadu8rErYljRDU5UHKXtsbDro1oSjk7Tm6SsMLBr5FuTz49TmuNq72/sJRyVUI/TWiIprm8sJZ3WkZCTmaEobS5r5h7X0tFTmSAnLC2rpp/Y1BIT2J9l6uzrZuCaFRMUWJ6k6evq5yFbFlPU2F3j6KsqZyHcF1TVWF1i56op5yJdGFXV2FziJqkpZuKd2VbWmJyhZagopqLemlfXWNxgpKcn5mMfG1jYGVxgI6ZnJeMfnBmY2dxfouVmJWMgHNqZmlxfYiRlZOLgXZuamtyfIaOkpCKgnhxbW5ze4SLjo2Jgnp0cXF1e4KHi4uHgnx3dHR3e4CFh4eFgn16d3d5fH+ChISDgX58e3p7fX+AgYGAf35+fn5+fg=="></audio>
+<div id="glass">
+  <canvas id="cv"></canvas>
+  <div class="hud">
+    <div class="tl" id="hudTitle">KIND·OF·SIM</div>
+    <div class="chips">
+      <button class="chip on" id="cSolo">SOLO</button>
+      <button class="chip" id="cDuo">DUO</button>
+      <button class="chip on" id="cSnd">SND</button>
+    </div>
+  </div>
+  <div class="bar">
+    <div class="grp"><div class="lab">ENERGY</div><div class="row">
+      <div class="sg on" id="eCalm">CALM</div><div class="sg" id="eFlow">FLOW</div><div class="sg" id="eStorm">STRM</div>
+    </div></div>
+    <div class="grp"><div class="lab">TRANSPORT</div><div class="row">
+      <div class="sg" id="tPause">PAUSE</div><div class="sg" id="tFade">FADE</div><div class="sg" id="tClear">CLR</div>
+    </div></div>
+    <div class="grp"><div class="lab">VOL</div><div class="sld">
+      <input type="range" id="vol" min="0" max="100" value="60"><span class="v" id="volV">60</span>
+    </div></div>
+    <div class="grp"><div class="lab">SCALE</div><div class="cyc">
+      <button id="scPrev">‹</button><div class="val" id="scVal">MIN PENTA</div><button id="scNext">›</button>
+    </div></div>
+    <div class="grp"><div class="lab">VOICE</div><div class="cyc">
+      <button id="voPrev">‹</button><div class="val" id="voVal">PLUCK</div><button id="voNext">›</button>
+    </div></div>
+    <div class="grp"><div class="lab">KEY</div><div class="cyc">
+      <button id="kyPrev">‹</button><div class="val" id="kyVal">A</div><button id="kyNext">›</button>
+    </div></div>
+  </div>
+</div>
+
+<div id="boot">
+  <div class="logo">K</div>
+  <div class="t">KIND OF SIM · RIPPLE 01</div>
+  <div class="s">TOCÁ PARA INICIAR CON SONIDO<br>USÁ VARIOS DEDOS A LA VEZ<br>PROBÁ EL MODO DUO A DOS MANOS</div>
+  <button id="start">START</button>
+</div>
+
+<script>
+/* ===== CONFIG ===== */
+const SCALES=[
+  {n:'MIN PENTA',s:[0,3,5,7,10]},{n:'MAJ PENTA',s:[0,2,4,7,9]},
+  {n:'HIRAJOSHI',s:[0,2,3,7,8]},{n:'DORIAN',s:[0,2,3,5,7,9,10]},
+  {n:'CHROMATIC',s:[0,1,2,3,4,5,6,7,8,9,10,11]},
+];
+const VOICES=[
+  {n:'PLUCK',osc:'triangle',par:2.001,pg:.35,dec:.62,decCalm:1.2,decSoft:.5,atk:.006},
+  {n:'BELL',osc:'sine',par:2.76,pg:.5,dec:1.6,decCalm:2.4,decSoft:1.2,atk:.006},
+  {n:'MARIMBA',osc:'sine',par:4.0,pg:.5,dec:.30,decCalm:.46,decSoft:.26,atk:.004},
+  {n:'GLASS',osc:'sine',par:3.001,pg:.3,dec:1.1,decCalm:2.0,decSoft:.9,atk:.05},
+];
+const ENERGY={
+  CALM:{damp:.978,force:1.4,auto:5200,gain:.5,thresh:.22,refrac:560},
+  FLOW:{damp:.990,force:2.2,auto:2900,gain:.8,thresh:.17,refrac:340},
+  STORM:{damp:.995,force:3.0,auto:1500,gain:1.0,thresh:.13,refrac:230},
+};
+const KEYS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+let scaleI=0,voiceI=0,energyName='CALM',keyRoot=9,layout='SOLO',soundOn=true;
+let paused=false,fading=false,fadeAmt=1,userVol=.6;
+const energy=()=>ENERGY[energyName],scale=()=>SCALES[scaleI],voice=()=>VOICES[voiceI];
+
+/* ===== CANVAS + FIELDS ===== */
+const glass=document.getElementById('glass');
+const cv=document.getElementById('cv');const ctx=cv.getContext('2d');
+let W,H,cell,fields=[];
+const DPR=()=>Math.min(devicePixelRatio||1,2);
+function midiOfKey(oct){return 12*oct+keyRoot+12;}
+function makeField(x,y,w,h,rootMidi,label){
+  const cols=Math.max(6,Math.floor(w/cell)),rows=Math.max(6,Math.floor(h/cell));
+  const f={x,y,w,h,cols,rows,rootMidi,label,
+    curr:new Float32Array(cols*rows),prev:new Float32Array(cols*rows),sensors:[],auto:0,lastWave:0};
+  const NX=Math.max(3,Math.round(cols/12)),NY=Math.max(3,Math.round(rows/12));
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){
+    f.sensors.push({gx:Math.round((i+1)*cols/(NX+1)),gy:Math.round((j+1)*rows/(NY+1)),
+      nx:(i+1)/(NX+1),ny:(j+1)/(NY+1),last:0,flash:-9999});
+  }
+  return f;
+}
+function buildLayout(){
+  fields=[];
+  if(layout==='SOLO'){ fields.push(makeField(0,0,W,H,midiOfKey(3),null)); }
+  else{
+    if(W>=H){const hw=Math.floor(W/2);
+      fields.push(makeField(0,0,hw,H,midiOfKey(2),'L'));
+      fields.push(makeField(hw,0,W-hw,H,midiOfKey(4),'R'));
+    }else{const hh=Math.floor(H/2);
+      fields.push(makeField(0,0,W,hh,midiOfKey(4),'T'));
+      fields.push(makeField(0,hh,W,H-hh,midiOfKey(2),'B'));
+    }
+  }
+}
+function resize(){
+  const dpr=DPR();
+  W=cv.width=Math.round(innerWidth*dpr);H=cv.height=Math.round(innerHeight*dpr);
+  cell=Math.max(5,Math.floor(Math.min(W,H)/72));
+  buildLayout();
+}
+addEventListener('resize',resize);
+addEventListener('orientationchange',()=>setTimeout(resize,300));
+resize();
+
+/* ===== SIM ===== */
+function splash(f,gx,gy,force){
+  const R=3;
+  for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){
+    const x=gx+dx,y=gy+dy;
+    if(x<1||y<1||x>=f.cols-1||y>=f.rows-1)continue;
+    const d=Math.hypot(dx,dy);if(d>R)continue;
+    f.curr[y*f.cols+x]+=force*Math.cos(d/R*Math.PI/2);
+  }
+}
+function step(f){
+  const {cols,rows,curr,prev}=f,damp=energy().damp;
+  for(let y=1;y<rows-1;y++){const o=y*cols;
+    for(let x=1;x<cols-1;x++){const i=o+x;
+      let v=(curr[i-1]+curr[i+1]+curr[i-cols]+curr[i+cols])/2-prev[i];
+      prev[i]=v*damp;
+    }}
+  f.curr=prev;f.prev=curr;
+}
+function checkSensors(f){
+  const now=performance.now(),E=energy();
+  for(const s of f.sensors){
+    const v=f.curr[s.gy*f.cols+s.gx];
+    if(v>E.thresh&&now-s.last>E.refrac&&now-f.lastWave>42){
+      s.last=now;s.flash=now;f.lastWave=now;
+      pluck(f,s.nx,s.ny,Math.min(1,v*1.1),true);
+    }
+  }
+}
+/* ===== RENDER ===== */
+let rings=[];
+function lerp(a,b,t){return a+(b-a)*t}
+function renderField(f){
+  const {x,y,cols,rows,curr}=f,dp=DPR();
+  for(let gy=0;gy<rows;gy++){const o=gy*cols;
+    for(let gx=0;gx<cols;gx++){
+      const v=curr[o+gx],a=Math.min(1,Math.abs(v)*1.35);
+      if(a<0.045)continue;
+      let rC,gC,bC;
+      if(a<0.6){const t=a/0.6;rC=lerp(20,79,t);gC=lerp(70,227,t);bC=lerp(58,180,t);}
+      else{const t=(a-0.6)/0.4;rC=lerp(79,238,t);gC=lerp(227,207,t);bC=lerp(180,109,t);}
+      ctx.fillStyle=`rgb(${rC|0},${gC|0},${bC|0})`;
+      const h=cell*(0.25+0.75*a),w=cell*0.46;
+      ctx.fillRect(x+gx*cell+(cell-w)/2,y+gy*cell+(cell-h)/2,w,h);
+    }}
+  const now=performance.now();
+  for(const s of f.sensors){
+    const cx=x+s.gx*cell+cell/2,cy=y+s.gy*cell+cell/2,fl=now-s.flash;
+    if(fl<340){const p=fl/340;
+      ctx.strokeStyle=`rgba(238,207,109,${0.85*(1-p)})`;ctx.lineWidth=1.3*dp;
+      ctx.beginPath();ctx.arc(cx,cy,3+p*18*dp,0,7);ctx.stroke();
+    }
+    ctx.fillStyle='rgba(154,217,194,0.20)';
+    ctx.beginPath();ctx.arc(cx,cy,1.8*dp,0,7);ctx.fill();
+  }
+  if(f.label){ctx.fillStyle='rgba(154,217,194,0.35)';ctx.font=`${12*dp}px monospace`;
+    ctx.fillText(f.label,x+10*dp,y+22*dp);}
+}
+function render(){
+  ctx.fillStyle='#0a1410';ctx.fillRect(0,0,W,H);
+  for(const f of fields)renderField(f);
+  if(fields.length===2){const dp=DPR();
+    ctx.strokeStyle='rgba(79,227,180,0.18)';ctx.lineWidth=1*dp;
+    ctx.beginPath();
+    if(W>=H){ctx.moveTo(fields[1].x,0);ctx.lineTo(fields[1].x,H);}
+    else{ctx.moveTo(0,fields[1].y);ctx.lineTo(W,fields[1].y);}
+    ctx.stroke();
+  }
+  const now=performance.now();
+  rings=rings.filter(r=>now-r.t<700);
+  for(const r of rings){const p=(now-r.t)/700,dp=DPR();
+    ctx.strokeStyle=`rgba(200,255,233,${0.55*(1-p)})`;ctx.lineWidth=1.6*dp;
+    ctx.beginPath();ctx.arc(r.x,r.y,8+p*44*dp,0,7);ctx.stroke();
+    ctx.beginPath();ctx.arc(r.x,r.y,3*dp,0,7);ctx.stroke();
+  }
+}
+function loop(t){
+  if(fading){fadeAmt=Math.max(0,fadeAmt-0.006);
+    if(master)master.gain.value=userVol*fadeAmt;
+    if(fadeAmt<=0){fading=false;paused=true;
+      $('tFade').classList.remove('on');$('tPause').classList.add('on');}}
+  if(!paused){
+    for(const f of fields){
+      if(!fading&&energy().auto&&t-f.auto>energy().auto){f.auto=t;
+        splash(f,2+Math.random()*(f.cols-4)|0,2+Math.random()*(f.rows-4)|0,1.5*fadeAmt);}
+      step(f);checkSensors(f);
+    }
+  }
+  render();requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ===== AUDIO ===== */
+let AC=null,master,audioReady=false;
+function initAudio(){
+  if(AC)return;
+  try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+  master=AC.createGain();master.gain.value=userVol*fadeAmt;
+  const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;
+  const dl=AC.createDelay(1);dl.delayTime.value=.30;
+  const fb=AC.createGain();fb.gain.value=.33;
+  const wet=AC.createGain();wet.gain.value=.32;
+  master.connect(lp);lp.connect(AC.destination);
+  lp.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(AC.destination);
+}
+// Desbloqueo de audio iOS: se llama en CADA gesto hasta que quede corriendo
+function unlockAudio(){
+  initAudio();
+  if(!AC)return;
+  if(AC.state==='suspended'){ AC.resume(); }
+  // tono mudo brevísimo dentro del gesto: convence a iOS de habilitar la salida
+  try{
+    const b=AC.createBuffer(1,1,22050);
+    const src=AC.createBufferSource(); src.buffer=b; src.connect(AC.destination); src.start(0);
+    const g=AC.createGain(); g.gain.value=0.00001;
+    const o=AC.createOscillator(); o.connect(g); g.connect(AC.destination);
+    o.start(); o.stop(AC.currentTime+0.02);
+  }catch(e){}
+  audioReady = AC.state==='running';
+  updateSndChip();
+}
+function updateSndChip(){
+  const c=document.getElementById('cSnd');
+  if(!c)return;
+  if(soundOn && (!AC || AC.state!=='running')){ c.textContent='SND?'; c.classList.remove('on'); }
+  else if(soundOn){ c.textContent='SND'; c.classList.add('on'); }
+  else { c.textContent='MUTE'; c.classList.remove('on'); }
+}
+function midi2f(m){return 440*Math.pow(2,(m-69)/12)}
+function pluck(f,nx,ny,vel=1,soft=false){
+  if(!soundOn||!AC)return;
+  const V=voice(),SC=scale().s,t=AC.currentTime;
+  const deg=SC[Math.floor(nx*SC.length)%SC.length];
+  const oct=2-Math.floor(ny*3);
+  const freq=midi2f(f.rootMidi+deg+oct*12);
+  const g=AC.createGain();
+  const peak=(soft?.11:.20)*energy().gain*vel;
+  const dec=soft?V.decSoft:(energyName==='CALM'?V.decCalm:V.dec);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(peak,t+(soft?V.atk*1.6:V.atk));
+  g.gain.exponentialRampToValueAtTime(.0001,t+dec);
+  const o1=AC.createOscillator();o1.type=V.osc;o1.frequency.value=freq;
+  const o2=AC.createOscillator();o2.type='sine';o2.frequency.value=freq*V.par;
+  const g2=AC.createGain();g2.gain.value=V.pg;
+  o1.connect(g);o2.connect(g2);g2.connect(g);g.connect(master);
+  o1.start(t);o2.start(t);o1.stop(t+dec+.2);o2.stop(t+dec+.2);
+}
+
+/* ===== MULTITOUCH POR ZONA ===== */
+const fingers=new Map();
+function fieldAt(px,py){
+  for(const f of fields)if(px>=f.x&&px<f.x+f.w&&py>=f.y&&py<f.y+f.h)return f;
+  return fields[0];
+}
+function inject(e,down,st){
+  const dpr=DPR();
+  const px=e.clientX*dpr,py=e.clientY*dpr;
+  const f=fieldAt(px,py);
+  const lx=(px-f.x)/f.w,ly=(py-f.y)/f.h;
+  splash(f,lx*f.cols|0,ly*f.rows|0,energy().force*(down?1:.55));
+  const now=performance.now();
+  if(down||now-st.lastNote>90||Math.hypot(lx-st.nx,ly-st.ny)>.07){
+    st.lastNote=now;st.nx=lx;st.ny=ly;
+    pluck(f,lx,ly,1,false);
+    rings.push({x:px,y:py,t:now});
+  }
+}
+glass.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.bar')||e.target.closest('.chips'))return;
+  e.preventDefault();
+  unlockAudio();
+  resumeTransport();
+  const st={nx:0,ny:0,lastNote:0};fingers.set(e.pointerId,st);inject(e,true,st);
+},{passive:false});
+glass.addEventListener('pointermove',e=>{
+  const st=fingers.get(e.pointerId);if(!st)return;inject(e,false,st);
+},{passive:false});
+function lift(e){fingers.delete(e.pointerId)}
+addEventListener('pointerup',lift);addEventListener('pointercancel',lift);
+
+/* ===== UI ===== */
+const $=id=>document.getElementById(id);
+function setLayout(l){layout=l;buildLayout();
+  $('cSolo').classList.toggle('on',l==='SOLO');$('cDuo').classList.toggle('on',l==='DUO');
+  $('hudTitle').textContent=l==='DUO'?'KIND·OF·SIM  DUO':'KIND·OF·SIM';}
+$('cSolo').onclick=()=>setLayout('SOLO');$('cDuo').onclick=()=>setLayout('DUO');
+$('cSnd').onclick=()=>{
+  playBeep();
+  if(!AC||AC.state!=='running'){ soundOn=true; unlockAudio(); updateSndChip(); return; }
+  soundOn=!soundOn; if(soundOn)AC.resume(); updateSndChip();
+};
+function setEnergy(n){energyName=n;
+  $('eCalm').classList.toggle('on',n==='CALM');$('eFlow').classList.toggle('on',n==='FLOW');
+  $('eStorm').classList.toggle('on',n==='STORM');}
+$('eCalm').onclick=()=>setEnergy('CALM');$('eFlow').onclick=()=>setEnergy('FLOW');$('eStorm').onclick=()=>setEnergy('STORM');
+function rS(){$('scVal').textContent=scale().n}
+$('scPrev').onclick=()=>{scaleI=(scaleI+SCALES.length-1)%SCALES.length;rS()};
+$('scNext').onclick=()=>{scaleI=(scaleI+1)%SCALES.length;rS()};
+function rV(){$('voVal').textContent=voice().n}
+$('voPrev').onclick=()=>{voiceI=(voiceI+VOICES.length-1)%VOICES.length;rV()};
+$('voNext').onclick=()=>{voiceI=(voiceI+1)%VOICES.length;rV()};
+function rK(){$('kyVal').textContent=KEYS[keyRoot];buildLayout()}
+$('kyPrev').onclick=()=>{keyRoot=(keyRoot+11)%12;rK()};
+$('kyNext').onclick=()=>{keyRoot=(keyRoot+1)%12;rK()};
+
+
+function resumeTransport(){
+  if(paused||fading){paused=false;fading=false;fadeAmt=1;
+    if(master)master.gain.value=userVol;
+    $('tPause').classList.remove('on');$('tFade').classList.remove('on');}
+}
+function clearFields(){for(const f of fields){f.curr.fill(0);f.prev.fill(0);}rings=[];}
+$('tPause').onclick=()=>{initAudio();
+  if(paused){resumeTransport();}
+  else{paused=true;fading=false;fadeAmt=1;if(master)master.gain.value=userVol;
+    $('tPause').classList.add('on');$('tFade').classList.remove('on');}};
+$('tFade').onclick=()=>{initAudio();
+  if(fading){resumeTransport();}
+  else{fading=true;paused=false;$('tFade').classList.add('on');$('tPause').classList.remove('on');}};
+$('tClear').onclick=()=>{clearFields();
+  $('tClear').classList.add('on');setTimeout(()=>$('tClear').classList.remove('on'),150);};
+$('vol').oninput=e=>{userVol=e.target.value/100;$('volV').textContent=e.target.value;
+  if(master&&!fading&&!paused)master.gain.value=userVol;};
+
+
+function playBeep(){
+  const el=document.getElementById('beep');
+  if(!el)return;
+  try{ el.currentTime=0; const pr=el.play(); if(pr&&pr.catch)pr.catch(()=>{}); }catch(e){}
+}
+let booted=false;
+function bootStart(){
+  if(booted)return; booted=true;
+  unlockAudio();
+  playBeep();
+  const boot=document.getElementById('boot');
+  boot.style.display='none';
+  if(!fields.length){ resize(); }
+  setTimeout(()=>{const f=fields[0]; if(f)splash(f,f.cols*.35|0,f.rows*.45|0,2.0)},250);
+  setTimeout(()=>{const f=fields[fields.length-1]; if(f)splash(f,f.cols*.6|0,f.rows*.55|0,2.0)},800);
+}
+// múltiples vías por si iOS ignora alguna; y se puede tocar toda la pantalla de inicio
+(function(){
+  const boot=document.getElementById('boot');
+  const btn=document.getElementById('start');
+  ['pointerup','touchend','click'].forEach(ev=>{
+    btn.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();bootStart();},{passive:false});
+    boot.addEventListener(ev,e=>{e.preventDefault();bootStart();},{passive:false});
+  });
+})();
+</script>
+</body>
+</html>
